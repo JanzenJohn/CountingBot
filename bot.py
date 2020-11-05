@@ -57,6 +57,7 @@ async def on_message(message):
 
         # Update the discord status
         await bot.change_presence(activity=discord.Game(str(files.read("number.pkl")-1)))
+        return
 
     else:
 
