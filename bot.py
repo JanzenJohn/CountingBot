@@ -1,6 +1,7 @@
 import discord
 import files
 
+
 bot = discord.Client()
 token = files.read("token.pkl")
 
