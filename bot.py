@@ -19,7 +19,7 @@ async def on_ready():
     print('We have logged in as {0.user}'.format(bot))
 
     # Set status to the number that we are at
-    await bot.change_presence(activity=discord.Game(str(files.read("number.pkl"))))
+    await bot.change_presence(activity=discord.Game(str(files.read("number.pkl")-1)))
 
 
 @bot.event
@@ -56,7 +56,7 @@ async def on_message(message):
         files.write("last_user.pkl", message.author.id)
 
         # Update the discord status
-        await bot.change_presence(activity=discord.Game(str(files.read("number.pkl"))))
+        await bot.change_presence(activity=discord.Game(str(files.read("number.pkl")-1)))
 
     else:
 
