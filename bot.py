@@ -22,7 +22,7 @@ async def on_ready():
 @bot.event
 async def on_message(message):
     # Ignore own messages unless they are leaderboard messages, if so save them to the guild file
-    if message.author == bot.user and (message.content.startswith == "---------Leaderboard----------" or message.content.startswith('Type "Update" to get a new leaderboard') or message.content.startswith("There are no Counters on")):
+    if message.author == bot.user and (message.content.startswith("---------Leaderboard-----") or message.content.startswith('Type "Update" to get a new leaderboard') or message.content.startswith("There are no Counters on")):
         data = files.read(f"data/{message.guild.id}.pkl")
         data["leaderboard_message_id"] = message.id
         data["leaderboard_message_channel_id"] = message.channel.id
@@ -50,9 +50,12 @@ async def on_message(message):
             if message.content.lower() == "update":
                 try:
                     # Retrieve the message and channel id and delete the old message
-                    channel = await bot.fetch_channel(data["leaderboard_message_channel_id"])
-                    msg = await channel.fetch_message(data["leaderboard_message_id"])
-                    await msg.delete()
+                    try:
+                        channel = await bot.fetch_channel(data["leaderboard_message_channel_id"])
+                        msg = await channel.fetch_message(data["leaderboard_message_id"])
+                        await msg.delete()
+                    except discord.NotFound:
+                        pass
                 except KeyError:
                     pass
                 # List all Counters
