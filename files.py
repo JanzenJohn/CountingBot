@@ -10,6 +10,7 @@ def read(file):
 
 
 def write(file, data):
-    with open(file, "wb")as f:
-        pickle.dump(data, f)
-        f.close()
+    f = open(file, "wb")
+    pickle.dump(data, f)
+    f.close()
+

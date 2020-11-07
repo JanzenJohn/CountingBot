@@ -5,7 +5,7 @@ bot = discord.Client()
 token = files.read("token.pkl")
 
 # TODO
-# Make the counter guild/server specific
+# Delete leaderboard messages
 
 
 @bot.event
@@ -17,8 +17,12 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
-    # Ignore own messages
-
+    # Ignore own messages unless they are leaderboard messages, if so save them to the guild file
+    if message.author == bot.user and (message.content.startswith == "---------Leaderboard----------" or message.content.startswith('Type "Update" to get a new leaderboard') or message.content.startswith("There are no Counters on")):
+        data = files.read(f"{message.guild.id}.pkl")
+        data["leaderboard_message_id"] = message.id
+        data["leaderboard_message_channel_id"] = message.channel.id
+        files.write(f"{message.guild.id}.pkl", data)
     if message.author.bot:
         return
 
@@ -37,13 +41,16 @@ async def on_message(message):
     # dont count if messages are not send in the counting channel
     if str(message.channel) != "counting":
 
-        # TODO
-        # If there are no Counters in the Guild
-        # save the message ID ?
-        # And delete it on the next message not send by a bot
         if str(message.channel) == "leaderboard":
 
             if message.content.lower() == "update":
+                try:
+                    # Retrieve the message and channel id and delete the old message
+                    channel = await bot.fetch_channel(data["leaderboard_message_channel_id"])
+                    msg = await channel.fetch_message(data["leaderboard_message_id"])
+                    await msg.delete()
+                except KeyError:
+                    pass
                 # List all Counters
                 counters_value = {}
                 counters = []
