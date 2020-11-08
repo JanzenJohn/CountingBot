@@ -1,7 +1,7 @@
 # CountingBot
 A discord bot to let users count in the #count channel
 
-I will probalby automate this process in the next update
+I will probably automate this process in the next update
 
 Setup :
 
