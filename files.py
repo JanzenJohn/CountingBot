@@ -1,4 +1,5 @@
 import pickle
+import os
 
 
 def read(file):
@@ -8,9 +9,12 @@ def read(file):
     return output
 
 
-
 def write(file, data):
     f = open(file, "wb")
     pickle.dump(data, f)
     f.close()
+
+
+def delete(file):
+    os.remove(file)
 

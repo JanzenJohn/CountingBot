@@ -5,8 +5,8 @@ bot = discord.Client()
 try:
     token = files.read("data/token.pkl")
 except FileNotFoundError:
-    print("Your token file is missing. Put it in the data folder")
-    exit(1)
+    token = input("INPUT TOKEN:")
+    files.write("data/token.pkl", token)
 
 # TODO
 # Delete leaderboard messages
@@ -123,4 +123,9 @@ async def on_message(message):
 
 
 # Run the bot
-bot.run(token)
+try:
+    bot.run(token)
+except discord.errors.LoginFailure:
+    print("TOKEN INVALID")
+    files.delete("data/token.pkl")
+    exit(1)
