@@ -102,7 +102,7 @@ async def on_message(message):
             counters = []
             for user in data:
                 if type(user) == int:
-                    counters.append([data[user], str(await bot.fetch_user(user))])
+                    counters.append([data[user], user])
             if not counters:
                 await message.channel.send(f"There are no Counters on {message.guild} :(")
             else:
@@ -110,8 +110,11 @@ async def on_message(message):
                 counters.sort()
                 counters.reverse()
                 board = "---------Leaderboard-----------------------------\n"
-                for place in range(len(counters)):
-                    board += f"{place + 1}:{counters[place][1]}:{counters[place][0]}\n"
+                for place in range(10):
+                    try:
+                        board += f"{place + 1}:{await bot.fetch_user(counters[place][1])}:{counters[place][0]}\n"
+                    except IndexError:
+                        pass
 
                 await message.channel.send(board)
 
