@@ -28,6 +28,7 @@ async def on_message(message):
         data["leaderboard_message_channel_id"] = message.channel.id
         files.write(f"data/{message.guild.id}.pkl", data)
     if message.author.bot:
+        await message.delete()
         return
 
     # Put server's data into var data for efficiency
