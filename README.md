@@ -6,4 +6,5 @@ Everything is automatic
 
 
 # Notice
-This bot throws errors at python version 3.6.x . Wich runs on ubuntu-minimal as python3. Use the command python3.8 instead
+Data cana be carried over from older version as long as they used the data directory to store data
+

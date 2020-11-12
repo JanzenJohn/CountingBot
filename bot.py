@@ -114,7 +114,8 @@ async def on_message(message):
                 board = "---------Leaderboard-----------------------------\n"
                 for place in range(10):
                     try:
-                        board += f"{place + 1}:{await bot.fetch_user(counters[place][1])}:{counters[place][0]}\n"
+                        name = await bot.fetch_user(counters[place][1])
+                        board += f"{place + 1}:{name}:{counters[place][0]}\n"
                     except IndexError:
                         pass
 

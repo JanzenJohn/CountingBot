@@ -1,5 +1,2 @@
-
-data/token.pkl
-last_user.pkl
-number.pkl
 *.pkl
+nohup.out
