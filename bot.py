@@ -1,5 +1,10 @@
-import discord
 import files
+import discord
+import time
+
+
+
+
 
 bot = discord.Client()
 try:
@@ -14,23 +19,46 @@ except FileNotFoundError:
 
 @bot.event
 async def on_ready():
-    print('We have logged in as {0.user}'.format(bot))
+    t = time.localtime()
+    current_time = time.strftime("[%H:%M]", t)
+    print(f"{current_time}:login successful as {bot.user}")
 
     # Set status to the number that we are at
 
 
 @bot.event
 async def on_message(message):
-    # Ignore own messages unless they are leaderboard messages, if so save them to the guild file
-    if message.author == bot.user and (message.content.startswith("---------Leaderboard-----") or message.content.startswith('Type "Update" to get a new leaderboard') or message.content.startswith("There are no Counters on")):
+    t = time.localtime()
+    current_time = time.strftime("[%H:%M]", t)
+
+    # Ignore own messages unless they are leaderboard messages, if so save them to the guild's file
+
+    if message.author == bot.user and str(message.channel).lower() == "leaderboard":
         data = files.read(f"data/{message.guild.id}.pkl")
         data["leaderboard_message_id"] = message.id
         data["leaderboard_message_channel_id"] = message.channel.id
         files.write(f"data/{message.guild.id}.pkl", data)
+        return
+    else:
+        try:
+            if message.author == bot.user:
+                data = files.read(f"data/{message.guild.id}.pkl")
+                if data["leaderboard_message_channel_id"] == message.channel.id:
+                    data = files.read(f"data/{message.guild.id}.pkl")
+                    data["leaderboard_message_id"] = message.id
+                    data["leaderboard_message_channel_id"] = message.channel.id
+                    files.write(f"data/{message.guild.id}.pkl", data)
+                    print(f"{current_time} on {message.guild}: non-fatal leaderboard channel was renamed")
+                    return
+        except KeyError:
+            pass
+
     if message.author.bot:
-        if (str(message.channel) == "leaderboard" or str(message.channel) == "counting") and message.author != bot.user:
+        if (str(message.channel) == "leaderboard" or str(message.channel) == "counting" or message.channel == await bot.fetch_channel(data["leaderboard_message_channel_id"])) and message.author != bot.user:
             await message.delete()
         return
+
+
 
     # Put server's data into var data for efficiency
     try:
@@ -43,14 +71,13 @@ async def on_message(message):
         return
 
     expected_number = data["count"]
-    print(f"expected number = {expected_number}")
     # dont count if messages are not send in the counting channel
     if str(message.channel) == "counting":
         # Check if message is a number
         try:
             message_number = int(message.content)
         except ValueError:
-            # If not delete the message
+            print(f"{current_time} on {message.guild}: was looking for {expected_number} got {message.content} instead")
             await message.delete()
             return
 
@@ -79,50 +106,90 @@ async def on_message(message):
                 # If participation is not there yet set it to one
                 data[message.author.id] = 1
 
-            # updating the files
-            files.write(f"data/{message.guild.id}.pkl", data)
 
+            try:
+                data["till_update"] = data["till_update"] - 1
+            except KeyError:
+                data["till_update"] = 99
+
+            if data["till_update"] == 0:
+                data["till_update"] = 100
+                try:
+                    try:
+                        channel = await bot.fetch_channel(data["leaderboard_message_channel_id"])
+                        msg = await channel.fetch_message(data["leaderboard_message_id"])
+                        await msg.delete()
+                    except KeyError:
+                        print(f"{current_time} on {message.guild}: No old leaderboard msg found")
+                        for channel in message.guild.channels:
+                            if str(channel) == "leaderboard":
+                                if type(channel) == discord.channel.CategoryChannel:
+                                    pass
+                                else:
+                                    print(f"{current_time} on {message.guild}: setup for leaderboard channel successful")
+                                    data["leaderboard_message_channel_id"] = channel.id
+                        try:
+                            data["leaderboard_message_channel_id"]
+                        except KeyError:
+                            print(f"{current_time} on {message.guild}: FATAL no leaderboards channel found")
+                            await message.delete()
+                            return
+                        pass
+                    except discord.errors.NotFound:
+                        print(f"{current_time} on {message.guild}: FATAL leaderboard msg not found!")
+                        pass
+                    # List all Counters
+                    counters_value = {}
+                    counters = []
+                    for user in data:
+                        if type(user) == int:
+                            counters.append([data[user], user])
+                    else:
+                        # Sort output
+                        counters.sort()
+                        counters.reverse()
+                        board = "---------Leaderboard-----------------------------\n"
+                        for place in range(10):
+                            try:
+                                name = await bot.fetch_user(counters[place][1])
+                                board += f"{place + 1}:{name}:{counters[place][0]}\n"
+                            except IndexError:
+                                pass
+                        try:
+                            channel = await bot.fetch_channel(data["leaderboard_message_channel_id"])
+                        except discord.errors.NotFound:
+                            print(f"{current_time} on {message.guild}: FATAL leaderboard channel deleted")
+                            data = files.read(f"data/{message.guild.id}.pkl")
+                            try:
+                                del data["leaderboard_message_channel_id"]
+                            except KeyError:
+                                pass
+                            files.write(f"data/{message.guild.id}.pkl", data)
+                            await message.delete()
+                            return
+                        await channel.send(board)
+                        print(f"{current_time} on {message.guild}: updated leaderboard")
+                except AttributeError:
+                    pass
+
+
+            # updating the files
+
+            # this prevents overwriting the leader_message_id key as the updating is handled async and is faster
+            # yes i know this is not good, I will look to improve this
+            try:
+                data_with_id = files.read(f'data/{message.guild.id}.pkl')
+                data["leaderboard_message_id"] = data_with_id["leaderboard_message_id"]
+            except KeyError:
+                pass
+            if (data["count"] - 1) % 100 == 0:
+                print(f"{current_time} on {message.guild}: Server reached {message.content}")
+            files.write(f"data/{message.guild.id}.pkl", data)
         else:
 
             await message.delete()
 
     if str(message.channel) == "leaderboard":
-        try:
-            # Retrieve the message and channel id and delete the old message
-            try:
-                channel = await bot.fetch_channel(data["leaderboard_message_channel_id"])
-                msg = await channel.fetch_message(data["leaderboard_message_id"])
-                await msg.delete()
-            except discord.NotFound:
-                pass
-        except KeyError:
-            pass
-        if message.content.lower() == "update":
-
-            # List all Counters
-            counters_value = {}
-            counters = []
-            for user in data:
-                if type(user) == int:
-                    counters.append([data[user], user])
-            if not counters:
-                await message.channel.send(f"There are no Counters on {message.guild} :(")
-            else:
-                # Sort output
-                counters.sort()
-                counters.reverse()
-                board = "---------Leaderboard-----------------------------\n"
-                for place in range(10):
-                    try:
-                        name = await bot.fetch_user(counters[place][1])
-                        board += f"{place + 1}:{name}:{counters[place][0]}\n"
-                    except IndexError:
-                        pass
-
-                await message.channel.send(board)
-
-        else:
-            await message.channel.send('Type "Update" to get a new leaderboard ')
         await message.delete()
     return
 
@@ -131,6 +198,6 @@ async def on_message(message):
 try:
     bot.run(token)
 except discord.errors.LoginFailure:
-    print("TOKEN INVALID")
+    print("STARTUP_ERROR: TOKEN INVALID \n deleting token.pkl")
     files.delete("data/token.pkl")
     exit(1)
