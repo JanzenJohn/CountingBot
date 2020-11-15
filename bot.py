@@ -3,9 +3,6 @@ import discord
 import time
 
 
-
-
-
 bot = discord.Client()
 try:
     token = files.read("data/token.pkl")
@@ -69,8 +66,10 @@ async def on_message(message):
     except AttributeError:
         await message.channel.send("Sorry you have to be on a server to count")
         return
-
-    expected_number = data["count"]
+    try:
+        expected_number = int(data["count"])
+    except ValueError:
+        expected_number = 1
     # dont count if messages are not send in the counting channel
     if str(message.channel) == "counting":
         # Check if message is a number
@@ -91,10 +90,11 @@ async def on_message(message):
             pass
 
         # delete message if the number isn't the one we're searching for
+
         if message_number == expected_number:
             # Update Values
 
-            data["count"] = data["count"] + 1
+            data["count"] = expected_number + 1
             data["last_counter"] = message.author.id
             try:
                 # Read participation data add 1 to user's value
@@ -112,7 +112,7 @@ async def on_message(message):
             except KeyError:
                 data["till_update"] = 99
 
-            if data["till_update"] == 0:
+            if data["till_update"] <= 0:
                 data["till_update"] = 100
                 try:
                     try:
@@ -186,7 +186,6 @@ async def on_message(message):
                 print(f"{current_time} on {message.guild}: Server reached {message.content}")
             files.write(f"data/{message.guild.id}.pkl", data)
         else:
-
             await message.delete()
 
     if str(message.channel) == "leaderboard":
